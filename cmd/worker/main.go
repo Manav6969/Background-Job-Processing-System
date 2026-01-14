@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
 	"github.com/Manav6969/Background-Job-Processing-System/internal/db"
 	"github.com/Manav6969/Background-Job-Processing-System/internal/queue"
+	"os"
 )
 
 type Job struct {
@@ -16,7 +16,14 @@ type Job struct {
 }
 
 func main() {
-	q := queue.NewRedisQueue("localhost:6379", "jobs")
+
+	err := db.Connect(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		panic(err)
+	}
+
+	addr := os.Getenv("REDIS_ADDR")
+	q := queue.NewRedisQueue(addr, "jobs")
 
 	fmt.Println("Worker started, waiting for jobs...")
 

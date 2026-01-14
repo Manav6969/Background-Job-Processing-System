@@ -7,6 +7,7 @@ import (
 	"github.com/Manav6969/Background-Job-Processing-System/internal/queue"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"os"
 )
 
 type Job struct {
@@ -14,8 +15,12 @@ type Job struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
 }
+var q *queue.RedisQueue
+func InitQueue() {
+	addr := os.Getenv("REDIS_ADDR")
+	q = queue.NewRedisQueue(addr, "jobs")
+}
 
-var q = queue.NewRedisQueue("localhost:6379", "jobs")
 
 func Create(c *gin.Context) {
 	var job Job
