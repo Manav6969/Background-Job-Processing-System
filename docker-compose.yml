@@ -18,13 +18,14 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "8080:8080"
+      - "6969:6969"
     depends_on:
       - postgres
       - redis
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/backgroundjobprocessingsystem
       REDIS_ADDR: redis:6379
+      JWT_SECRET: fuck_you_dudeeeee
 
   worker:
     build:
