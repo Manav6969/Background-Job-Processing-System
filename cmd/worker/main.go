@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
+	"github.com/Manav6969/Background-Job-Processing-System/internal/config"
 	"github.com/Manav6969/Background-Job-Processing-System/internal/db"
 	"github.com/Manav6969/Background-Job-Processing-System/internal/queue"
-	"os"
 )
 
 type Job struct {
@@ -16,16 +16,16 @@ type Job struct {
 }
 
 func main() {
+	cfg := config.Load()
 
-	err := db.Connect(os.Getenv("DATABASE_URL"))
+	err := db.Connect(cfg.DatabaseURL)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to connect to DB: %v", err)
 	}
 
-	addr := os.Getenv("REDIS_ADDR")
-	q := queue.NewRedisQueue(addr, "jobs")
+	q := queue.NewRedisQueue(cfg.RedisAddr, "jobs")
 
-	fmt.Println("Worker started, waiting for jobs...")
+	log.Println("Worker started, waiting for jobs...")
 
 	for {
 		msg, err := q.Pop()
@@ -36,21 +36,23 @@ func main() {
 		var job Job
 		_ = json.Unmarshal([]byte(msg), &job)
 
-		db.Conn.Exec(
+		_, _ = db.Pool.Exec(
 			context.Background(),
-			"UPDATE jobs SET status=$1 WHERE id=$2",
+			"UPDATE jobs SET status=$1, started_at=NOW() WHERE id=$2",
 			"running",
 			job.ID,
 		)
 
-		db.Conn.Exec(
+		log.Printf("Processing job %d: %s", job.ID, job.Type)
+
+		// Simulate processing
+		_, _ = db.Pool.Exec(
 			context.Background(),
-			"UPDATE jobs SET status=$1 WHERE id=$2",
+			"UPDATE jobs SET status=$1, finished_at=NOW() WHERE id=$2",
 			"completed",
 			job.ID,
 		)
 
-		fmt.Println("Processing job:", job.Type, job.Payload)
-
+		log.Printf("Job %d completed", job.ID)
 	}
 }
