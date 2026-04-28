@@ -6,12 +6,14 @@ import (
 )
 
 type Config struct {
-	JWTSecret      string
-	Port           string
-	RateLimit      int
-	DatabaseURL    string
-	RedisAddr      string
-	MigrationsPath string
+	JWTSecret            string
+	Port                 string
+	RateLimit            int
+	DatabaseURL          string
+	RedisAddr            string
+	MigrationsPath       string
+	WorkerConcurrency    int
+	ShutdownGracePeriod  int
 }
 
 func Load() *Config {
@@ -47,12 +49,28 @@ func Load() *Config {
 		migrationsPath = "./migrations"
 	}
 
+	workerConcurrency := 10
+	if wc := os.Getenv("WORKER_CONCURRENCY"); wc != "" {
+		if val, err := strconv.Atoi(wc); err == nil {
+			workerConcurrency = val
+		}
+	}
+
+	shutdownGracePeriod := 30
+	if sgp := os.Getenv("SHUTDOWN_GRACE_PERIOD"); sgp != "" {
+		if val, err := strconv.Atoi(sgp); err == nil {
+			shutdownGracePeriod = val
+		}
+	}
+
 	return &Config{
-		JWTSecret:      jwtSecret,
-		Port:           port,
-		RateLimit:      rateLimit,
-		DatabaseURL:    databaseURL,
-		RedisAddr:      redisAddr,
-		MigrationsPath: migrationsPath,
+		JWTSecret:            jwtSecret,
+		Port:                 port,
+		RateLimit:            rateLimit,
+		DatabaseURL:          databaseURL,
+		RedisAddr:            redisAddr,
+		MigrationsPath:       migrationsPath,
+		WorkerConcurrency:    workerConcurrency,
+		ShutdownGracePeriod:  shutdownGracePeriod,
 	}
 }

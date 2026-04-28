@@ -9,9 +9,19 @@ services:
       POSTGRES_PASSWORD: postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:6
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
@@ -20,23 +30,32 @@ services:
     ports:
       - "6969:6969"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/backgroundjobprocessingsystem
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/backgroundjobprocessingsystem?sslmode=disable
       REDIS_ADDR: redis:6379
-      JWT_SECRET: fuck_you_dudeeeee
+      JWT_SECRET: super_secret_jwt_key_change_me
+      MIGRATIONS_PATH: ./migrations
+      RATE_LIMIT: "100"
 
   worker:
     build:
       context: .
       dockerfile: Dockerfile.worker
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/backgroundjobprocessingsystem
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/backgroundjobprocessingsystem?sslmode=disable
       REDIS_ADDR: redis:6379
+      JWT_SECRET: super_secret_jwt_key_change_me
+      WORKER_CONCURRENCY: "10"
+      SHUTDOWN_GRACE_PERIOD: "30"
 
 volumes:
   pgdata:

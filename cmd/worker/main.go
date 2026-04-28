@@ -1,58 +1,43 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/Manav6969/Background-Job-Processing-System/internal/config"
 	"github.com/Manav6969/Background-Job-Processing-System/internal/db"
+	"github.com/Manav6969/Background-Job-Processing-System/internal/logger"
 	"github.com/Manav6969/Background-Job-Processing-System/internal/queue"
+	"github.com/Manav6969/Background-Job-Processing-System/internal/worker"
 )
 
-type Job struct {
-	ID      int         `json:"id"`
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
-}
-
 func main() {
+	logger.Init()
+	log := logger.Log
+
 	cfg := config.Load()
 
+	// Connect to Database
 	err := db.Connect(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to DB: %v", err)
+		log.Fatal().Err(err).Msg("Failed to connect to DB")
 	}
 
 	q := queue.NewRedisQueue(cfg.RedisAddr, "jobs")
 
-	log.Println("Worker started, waiting for jobs...")
+	log.Info().Int("concurrency", cfg.WorkerConcurrency).Msg("Worker started")
 
-	for {
-		msg, err := q.Pop()
-		if err != nil {
-			continue
-		}
+	pool := worker.NewPool(cfg.WorkerConcurrency, q)
+	pool.Start()
 
-		var job Job
-		_ = json.Unmarshal([]byte(msg), &job)
+	// Graceful shutdown setup
+	stopChan := make(chan os.Signal, 1)
+	signal.Notify(stopChan, syscall.SIGINT, syscall.SIGTERM)
 
-		_, _ = db.Pool.Exec(
-			context.Background(),
-			"UPDATE jobs SET status=$1, started_at=NOW() WHERE id=$2",
-			"running",
-			job.ID,
-		)
+	// Wait for termination signal
+	sig := <-stopChan
+	log.Info().Str("signal", sig.String()).Msg("Shutting down gracefully...")
 
-		log.Printf("Processing job %d: %s", job.ID, job.Type)
-
-		// Simulate processing
-		_, _ = db.Pool.Exec(
-			context.Background(),
-			"UPDATE jobs SET status=$1, finished_at=NOW() WHERE id=$2",
-			"completed",
-			job.ID,
-		)
-
-		log.Printf("Job %d completed", job.ID)
-	}
+	pool.Stop(cfg.ShutdownGracePeriod)
 }

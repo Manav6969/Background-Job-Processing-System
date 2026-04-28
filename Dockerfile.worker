@@ -7,7 +7,6 @@ RUN go mod download
 
 COPY . .
 
-WORKDIR /app/cmd/worker
-RUN go build -o worker
+RUN go build -o worker ./cmd/worker
 
 CMD ["./worker"]
