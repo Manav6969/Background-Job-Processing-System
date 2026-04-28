@@ -516,13 +516,3 @@ CREATE INDEX idx_jobs_idem_key   ON jobs (idempotency_key);
 5. Open a Pull Request
 
 ---
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-<p align="center">
-  Built with ❤️ by <a href="https://github.com/Manav6969">Manav</a>
-</p>
