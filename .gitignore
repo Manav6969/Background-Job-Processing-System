@@ -1,1 +1,43 @@
-bin/*.env
+# Binaries
+/api
+/worker
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Go build cache & output
+/bin/
+/out/
+/tmp/
+
+# Environment & secrets
+.env
+.env.*
+*.env
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker volumes
+pgdata/
+
+# Go vendor (if used)
+vendor/
+
+# Coverage reports
+coverage.out
+coverage.html
+*.coverprofile
